@@ -156,7 +156,18 @@ func (f *JUnitFormatter) OpenTest(test *test.Test) {
 
 // Report implements prove.Formatter
 func (f *JUnitFormatter) Report() {
-	out := os.Stdout
+	goProveOutputPath := os.Getenv("JUNIT_OUTPUT_FILE")
+
+	var out io.Writer
+	if goProveOutputPath == "" {
+		out = os.Stdout
+	} else {
+		fp, err := os.Create(goProveOutputPath)
+		if err != nil {
+			panic(err)
+		}
+		out = fp
+	}
 	io.WriteString(out, xml.Header)
 	enc := xml.NewEncoder(out)
 	enc.Indent("", "    ")
