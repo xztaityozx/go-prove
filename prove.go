@@ -1,6 +1,7 @@
 package prove
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io"
@@ -31,6 +32,9 @@ type Prove struct {
 
 	Merge   bool
 	Plugins []Plugin
+
+	// Name of test target list file
+	testTargetListFile string
 
 	chanTests  chan *test.Test
 	chanSuites chan *test.Test
@@ -90,6 +94,7 @@ func NewProve() *Prove {
 	p.FlagSet.StringVar(&p.formatter, "formatter", "", "Result formatter to use")
 	p.FlagSet.BoolVar(&p.onlyFailed, "onlyFailed", false, "Only failed tests are output")
 	p.FlagSet.BoolVar(&p.Merge, "merge", false, "Merge test scripts' STDERR with their STDOUT")
+	p.FlagSet.StringVar(&p.testTargetListFile, "test-target-list-file", "", "Path to test target list file")
 	p.FlagSet.BoolVar(&p.help, "h", false, "show this help")
 	p.FlagSet.BoolVar(&p.help, "help", false, "show this help")
 	p.FlagSet.BoolVar(&p.help, "?", false, "show this help")
@@ -183,6 +188,17 @@ func (p *Prove) Run(args []string) {
 // FindTestFiles lists test files.
 func (p *Prove) FindTestFiles() []string {
 	files := []string{}
+	if len(p.testTargetListFile) != 0 {
+		if fp, err := os.OpenFile(p.testTargetListFile, os.O_RDONLY, 0644); err != nil {
+			panic(fmt.Sprintf("test target list file not found: %s", p.testTargetListFile))
+		} else {
+      scan := bufio.NewScanner(fp)
+      for scan.Scan() {
+        files = append(files, scan.Text())
+      }
+      return files
+		}
+	}
 	if p.FlagSet.NArg() == 0 {
 		files = p.findTestFiles(files, "t")
 	} else {
